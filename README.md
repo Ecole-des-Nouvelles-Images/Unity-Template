@@ -83,5 +83,3 @@ We would like to thank:
 ## Recommendations
 For the best experience, we recommend playing with **[optimal player setup, equipment, or difficulty settings]**.  
 [Additional recommendations, such as tutorials or preparation tips.]
-
-![Additional Image](https://github.com/[GitHubRepo]/assets/additional-image.png)
