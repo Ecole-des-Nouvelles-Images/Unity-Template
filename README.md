@@ -3,12 +3,12 @@
 
 [A brief and engaging tagline or description of the game]
 
-[![Unity Version](https://img.shields.io/badge/Unity-[UnityVersion]-blue?style=flat&logo=unity)](https://unity.com/)
-[![GitHub Release](https://img.shields.io/github/v/release/[GitHubRepo])](https://github.com/[GitHubRepo]/releases)
-[![License](https://img.shields.io/github/license/[GitHubRepo])](https://github.com/[GitHubRepo]/blob/main/LICENSE)
-[![Repo Size](https://img.shields.io/github/repo-size/[GitHubRepo]?color=lightgrey)](https://github.com/[GitHubRepo])
+[![Unity Version](https://img.shields.io/badge/Unity-2022.3.47-blue?style=flat&logo=unity)](https://unity.com/)
+[![GitHub Release](https://img.shields.io/github/v/release/Ecole-des-Nouvelles-Images/Unity-Template)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/releases)
+[![License](https://img.shields.io/github/license/Ecole-des-Nouvelles-Images/Unity-Template)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/LICENSE)
+[![Repo Size](https://img.shields.io/github/repo-size/Ecole-des-Nouvelles-Images/Unity-Template?color=lightgrey)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template)
 
-![Main Banner](https://github.com/[GitHubRepo]/assets/main-banner.png)
+![Main Banner](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/assets/main-banner.png)
 
 ## Table of Contents
 1. [Introduction](#introduction)
