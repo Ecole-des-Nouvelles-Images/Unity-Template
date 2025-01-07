@@ -36,7 +36,7 @@ This game was brought to life by **[Team Name or "a group of X developers/artist
 - **[Name 3]**: [Role and contributions]
 - **[Name 4]**: [Role and contributions]
 
-![Team](https://github.com/[GitHubRepo]/assets/team-photo.png)
+![Team](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/assets/team-photo.png)
 
 ---
 
@@ -49,7 +49,7 @@ This game was brought to life by **[Team Name or "a group of X developers/artist
 ### Phase 2: [Phase Name]
 [Describe the second phase, any escalating challenges, and goals.]
 
-![Gameplay Screenshot](https://github.com/[GitHubRepo]/assets/gameplay-screenshot.png)
+![Gameplay Screenshot](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/assets/gameplay-screenshot.png)
 
 ---
 
@@ -61,7 +61,6 @@ This game was brought to life by **[Team Name or "a group of X developers/artist
 ## Release
 [Provide details about the platform, availability, and installation instructions. Mention if the game is available on PC, console, or mobile, and provide links to download or install.]
 
-An `.apk` for Android or other installation files can be found in the [Releases](https://github.com/[GitHubRepo]/releases) section.  
 This game supports **[platform requirements, e.g., Android 5.1+]**.
 
 ---
@@ -69,7 +68,7 @@ This game supports **[platform requirements, e.g., Android 5.1+]**.
 ## Development
 This project is currently **[status: finished, in development, etc.]**. Future updates might include **[examples of planned features or fixes]**.  
 
-If you encounter any bugs or have suggestions, please open an **[issue ticket](https://github.com/[GitHubRepo]/issues/new)**.
+If you encounter any bugs or have suggestions, please open an **[issue ticket](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/issues/new)**.
 
 ---
 
