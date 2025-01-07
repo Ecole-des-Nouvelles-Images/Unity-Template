@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/github/license/Ecole-des-Nouvelles-Images/Unity-Template)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/LICENSE)
 [![Repo Size](https://img.shields.io/github/repo-size/Ecole-des-Nouvelles-Images/Unity-Template?color=lightgrey)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template)
 
-![Main Banner](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/MetaData/main-banner.png)
+![Main Banner](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/main-banner.png)
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -36,7 +36,7 @@ This game was brought to life by **[Team Name or "a group of X developers/artist
 - **[Name 3]**: [Role and contributions]
 - **[Name 4]**: [Role and contributions]
 
-![Team](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/MetaData/team-photo.png)
+![Team](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/team-photo.png)
 
 ---
 
@@ -49,7 +49,7 @@ This game was brought to life by **[Team Name or "a group of X developers/artist
 ### Phase 2: [Phase Name]
 [Describe the second phase, any escalating challenges, and goals.]
 
-![Gameplay Screenshot](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/MetaData/gameplay-screenshot.png)
+![Gameplay Screenshot](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/gameplay-screenshot.png)
 
 ---
 
