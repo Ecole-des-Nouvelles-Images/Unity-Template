@@ -9,8 +9,8 @@ on:
 env:
   UNITY_VERSION: "6000.0.49.f1"
   BUILD_WINDOWS: "true"
-  BUILD_MAC: "false"
-  BUILD_ANDROID: "false"
+  BUILD_MAC: "true"
+  BUILD_ANDROID: "true"
   FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
   ARCHIVE_NAME_WIN: "UnityBuild_Windows.zip"
   ARCHIVE_NAME_MAC: "UnityBuild_Mac.zip"
@@ -51,68 +51,42 @@ jobs:
             exit 1
           fi
 
-  activate_license:
-    name: Activate Unity License
+  build:
+    name: Build for ${{ matrix.targetPlatform }}
     needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - targetPlatform: StandaloneWindows64
+            enabled: ${{ env.BUILD_WINDOWS }}
+            archive: ${{ env.ARCHIVE_NAME_WIN }}
+          - targetPlatform: StandaloneOSX
+            enabled: ${{ env.BUILD_MAC }}
+            archive: ${{ env.ARCHIVE_NAME_MAC }}
+          - targetPlatform: Android
+            enabled: ${{ env.BUILD_ANDROID }}
+            archive: ${{ env.ARCHIVE_NAME_ANDROID }}
+    if: matrix.enabled == 'true'
     steps:
       - uses: actions/checkout@v3
       - name: Activate Unity License
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
-  build_windows:
-    if: needs.setup.outputs.windows_enabled == 'true'
-    name: Build Windows
-    needs: [setup, check_conflicts, activate_license]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build Windows
+      - name: Build ${{ matrix.targetPlatform }}
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: StandaloneWindows64
+          targetPlatform: ${{ matrix.targetPlatform }}
       - run: |
           mkdir -p release
-          zip -r release/${{ env.ARCHIVE_NAME_WIN }} build/StandaloneWindows64/
-
-  build_mac:
-    if: needs.setup.outputs.mac_enabled == 'true'
-    name: Build Mac
-    needs: [setup, check_conflicts, activate_license]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build Mac
-        uses: game-ci/unity-builder@v2
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: StandaloneOSX
-      - run: |
-          mkdir -p release
-          zip -r release/${{ env.ARCHIVE_NAME_MAC }} build/StandaloneOSX/
-
-  build_android:
-    if: needs.setup.outputs.android_enabled == 'true'
-    name: Build Android
-    needs: [setup, check_conflicts, activate_license]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build Android
-        uses: game-ci/unity-builder@v2
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: Android
-      - run: |
-          mkdir -p release
-          zip -r release/${{ env.ARCHIVE_NAME_ANDROID }} build/Android/
+          zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}
 
   release_build:
     name: Create or Update GitHub Release
-    needs: [build_windows, build_mac, build_android]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
