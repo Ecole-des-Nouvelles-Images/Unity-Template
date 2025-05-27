@@ -56,8 +56,18 @@ jobs:
     needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix:
+        include:
+          - targetPlatform: StandaloneWindows64
+            enabled: true
+            archive: UnityBuild_Windows.zip
+          - targetPlatform: StandaloneOSX
+            enabled: false
+            archive: UnityBuild_Mac.zip
+          - targetPlatform: Android
+            enabled: false
+            archive: UnityBuild_Android.zip
+
     steps:
       - name: Check if platform is enabled
         if: matrix.enabled == true
