@@ -15,24 +15,24 @@ env:
 
 jobs:
   setup:
-    name: Setup Build Config
+    name: Setup Matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set_matrix.outputs.matrix }}
+      matrix_json: ${{ steps.set_matrix.outputs.matrix_json }}
     steps:
       - id: set_matrix
         run: |
-          MATRIX_JSON=$(cat <<EOF
-          {
-            "include": [
-              { "targetPlatform": "StandaloneWindows64", "enabled": true, "archive": "UnityBuild_Windows.zip" },
-              { "targetPlatform": "StandaloneOSX", "enabled": false, "archive": "UnityBuild_Mac.zip" },
-              { "targetPlatform": "Android", "enabled": false, "archive": "UnityBuild_Android.zip" }
+          echo '${{ toJSON({
+            include: [
+              { targetPlatform: "StandaloneWindows64", enabled: true, archive: "UnityBuild_Windows.zip" },
+              { targetPlatform: "StandaloneOSX", enabled: false, archive: "UnityBuild_Mac.zip" },
+              { targetPlatform: "Android", enabled: false, archive: "UnityBuild_Android.zip" }
             ]
-          }
-          EOF
-          )
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          }) }}' > matrix.json
+          MATRIX=$(cat matrix.json)
+          echo "matrix_json<<EOF" >> $GITHUB_OUTPUT
+          echo "$MATRIX" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   check_conflicts:
     name: Check for Unity file conflicts
@@ -43,8 +43,8 @@ jobs:
       - name: Detect merge conflict markers
         run: |
           echo "Checking for conflict markers in Unity files..."
-          grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ || true
-          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ | wc -l)
+          grep -r -E '<<<<<<<|=======|>>>>>>>' --include="${{ env.FILE_PATTERNS }}" ./ || true
+          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include="${{ env.FILE_PATTERNS }}" ./ | wc -l)
           echo "Found $CONFLICT_COUNT conflict markers."
           if [ "$CONFLICT_COUNT" -gt 0 ]; then
             echo "::error file=CONFLICT,::Conflict markers found in Unity files! Please resolve before merging."
@@ -56,44 +56,28 @@ jobs:
     needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        include:
-          - targetPlatform: StandaloneWindows64
-            enabled: true
-            archive: UnityBuild_Windows.zip
-          - targetPlatform: StandaloneOSX
-            enabled: false
-            archive: UnityBuild_Mac.zip
-          - targetPlatform: Android
-            enabled: false
-            archive: UnityBuild_Android.zip
-
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix_json) }}
     steps:
-      - name: Check if platform is enabled
-        if: matrix.enabled == true
-        run: echo "Building for ${{ matrix.targetPlatform }} is enabled."
-
       - uses: actions/checkout@v3
-        if: matrix.enabled == true
-
       - name: Activate Unity License
-        if: matrix.enabled == true
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
-      - name: Build ${{ matrix.targetPlatform }}
-        if: matrix.enabled == true
+      - name: Build
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: ${{ matrix.targetPlatform }}
-
-      - name: Archive Build
-        if: matrix.enabled == true
-        run: |
-          mkdir -p release
-          zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}
+      - run: |
+          if [ "${{ matrix.enabled }}" = "true" ]; then
+            mkdir -p release
+            zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}/
+          fi
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Build-${{ matrix.targetPlatform }}
+          path: release/${{ matrix.archive }}
 
   release_build:
     name: Create or Update GitHub Release
@@ -101,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create or Update GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
@@ -110,9 +94,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            release/UnityBuild_Windows.zip
-            release/UnityBuild_Mac.zip
-            release/UnityBuild_Android.zip
+            release/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
