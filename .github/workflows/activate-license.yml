@@ -28,7 +28,7 @@ jobs:
 
       # Upload artifact (Unity_v20XX.X.XXXX.alf)
       - name: Expose as artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.alfFile.outputs.filePath }}
           path: ${{ steps.alfFile.outputs.filePath }}
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download .alf artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.request_alf.outputs.alf }}
 
@@ -62,14 +62,6 @@ jobs:
       - name: Activate the license
         continue-on-error: true
         run: unity-license-activate "${{ secrets.UNITY_EMAIL }}" "${{ secrets.UNITY_PASSWORD }}" "${{ needs.request_alf.outputs.alf }}"
-
-      # Add the error handling step here!
-      - name: 🩺 Upload error screenshot
-        if: failure()
-        uses: actions/upload-artifact@v1
-        with:
-          name: screenshot_error
-          path: error.png
 
       - name: Read ulf
         id: ulfRead
