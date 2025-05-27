@@ -18,15 +18,6 @@ jobs:
   setup:
     name: Setup Build Config
     runs-on: ubuntu-latest
-    outputs:
-      matrix_json: |
-        {
-          "include": [
-            { "targetPlatform": "StandaloneWindows64", "enabled": true, "archive": "UnityBuild_Windows.zip" },
-            { "targetPlatform": "StandaloneOSX", "enabled": false, "archive": "UnityBuild_Mac.zip" },
-            { "targetPlatform": "Android", "enabled": false, "archive": "UnityBuild_Android.zip" }
-          ]
-        }
     steps:
       - run: echo "Setup complete."
 
@@ -47,56 +38,83 @@ jobs:
             exit 1
           fi
 
-  build:
-    name: Build for ${{ matrix.targetPlatform }}
-    needs: [setup, check_conflicts]
+  build_windows:
+    name: Build Windows
+    needs: [check_conflicts]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.setup.outputs.matrix_json) }}
-    if: ${{ matrix.enabled == true }}
     steps:
       - uses: actions/checkout@v3
-
-      # Activation de la licence Unity directement dans le build
       - name: Activate Unity License
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
-      - name: Cache Library
-        uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('**/*.cs', '**/*.unity', '**/*.prefab', '**/*.mat', '**/*.asset', '**/*.anim', '**/*.controller') }}
-
-      - name: Build ${{ matrix.targetPlatform }}
+      - name: Build Windows
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: ${{ matrix.targetPlatform }}
-
-      - name: Archive Build
-        run: |
+          targetPlatform: StandaloneWindows64
+      - run: |
           mkdir -p release
-          zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}/
-
+          zip -r release/UnityBuild_Windows.zip build/StandaloneWindows64/
       - uses: actions/upload-artifact@v3
         with:
-          name: Build ${{ matrix.targetPlatform }}
-          path: release/${{ matrix.archive }}
+          name: WindowsBuild
+          path: release/UnityBuild_Windows.zip
 
-  release_build:
-    name: Create or Update GitHub Release
-    needs: build
+  build_mac:
+    name: Build Mac
+    needs: [check_conflicts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v3
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      - name: Build Mac
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneOSX
+      - run: |
+          mkdir -p release
+          zip -r release/UnityBuild_Mac.zip build/StandaloneOSX/
+      - uses: actions/upload-artifact@v3
+        with:
+          name: MacBuild
+          path: release/UnityBuild_Mac.zip
+
+  build_android:
+    name: Build Android
+    needs: [check_conflicts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Activate Unity License
+        uses: game-ci/unity-activate@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      - name: Build Android
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+      - run: |
+          mkdir -p release
+          zip -r release/UnityBuild_Android.zip build/Android/
+      - uses: actions/upload-artifact@v3
+        with:
+          name: AndroidBuild
+          path: release/UnityBuild_Android.zip
+
+  release_build:
+    name: Create or Update GitHub Release
+    needs: [build_windows, build_mac, build_android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
         with:
           path: release
-
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -105,7 +123,7 @@ jobs:
           body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
-          files: release/**/*
+          files: release/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
