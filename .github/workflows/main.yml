@@ -7,14 +7,10 @@ on:
   workflow_dispatch:
 
 env:
-  UNITY_VERSION: "6000.0.49f1"  # Version Unity
-
-  # Activation des plateformes
+  UNITY_VERSION: "6000.0.49.f1"
   BUILD_WINDOWS: "true"
   BUILD_MAC: "false"
   BUILD_ANDROID: "false"
-
-  # Config générale
   FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
   ARCHIVE_NAME_WIN: "UnityBuild_Windows.zip"
   ARCHIVE_NAME_MAC: "UnityBuild_Mac.zip"
@@ -24,12 +20,26 @@ env:
   RELEASE_NAME: "Unity Build"
 
 jobs:
+  setup:
+    name: Setup Build Config
+    runs-on: ubuntu-latest
+    outputs:
+      windows_enabled: ${{ steps.set_outputs.outputs.windows_enabled }}
+      mac_enabled: ${{ steps.set_outputs.outputs.mac_enabled }}
+      android_enabled: ${{ steps.set_outputs.outputs.android_enabled }}
+    steps:
+      - id: set_outputs
+        run: |
+          echo "windows_enabled=${{ env.BUILD_WINDOWS }}" >> $GITHUB_OUTPUT
+          echo "mac_enabled=${{ env.BUILD_MAC }}" >> $GITHUB_OUTPUT
+          echo "android_enabled=${{ env.BUILD_ANDROID }}" >> $GITHUB_OUTPUT
+
   check_conflicts:
     name: Check for Unity file conflicts
     runs-on: ubuntu-latest
+    needs: setup
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Detect merge conflict markers
         run: |
           echo "Checking for conflict markers in Unity files..."
@@ -42,53 +52,50 @@ jobs:
           fi
 
   build_windows:
-    if: env.BUILD_WINDOWS == 'true'
-    name: Build Unity Project for Windows
-    needs: check_conflicts
+    if: needs.setup.outputs.windows_enabled == 'true'
+    name: Build Windows
+    needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build Unity Project (Windows)
+      - name: Build Windows
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
-      - name: Archive Windows Build
-        run: |
+      - run: |
           mkdir -p release
           zip -r release/${{ env.ARCHIVE_NAME_WIN }} build/StandaloneWindows64/
 
   build_mac:
-    if: env.BUILD_MAC == 'true'
-    name: Build Unity Project for Mac
-    needs: check_conflicts
+    if: needs.setup.outputs.mac_enabled == 'true'
+    name: Build Mac
+    needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build Unity Project (Mac)
+      - name: Build Mac
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneOSX
-      - name: Archive Mac Build
-        run: |
+      - run: |
           mkdir -p release
           zip -r release/${{ env.ARCHIVE_NAME_MAC }} build/StandaloneOSX/
 
   build_android:
-    if: env.BUILD_ANDROID == 'true'
-    name: Build Unity Project for Android
-    needs: check_conflicts
+    if: needs.setup.outputs.android_enabled == 'true'
+    name: Build Android
+    needs: [setup, check_conflicts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build Unity Project (Android)
+      - name: Build Android
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
-      - name: Archive Android Build
-        run: |
+      - run: |
           mkdir -p release
           zip -r release/${{ env.ARCHIVE_NAME_ANDROID }} build/Android/
 
