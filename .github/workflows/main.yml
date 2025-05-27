@@ -58,19 +58,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
-    if: matrix.enabled == true
     steps:
+      - name: Check if platform is enabled
+        if: matrix.enabled == true
+        run: echo "Building for ${{ matrix.targetPlatform }} is enabled."
+
       - uses: actions/checkout@v3
+        if: matrix.enabled == true
+
       - name: Activate Unity License
+        if: matrix.enabled == true
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
       - name: Build ${{ matrix.targetPlatform }}
+        if: matrix.enabled == true
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: ${{ matrix.targetPlatform }}
-      - run: |
+
+      - name: Archive Build
+        if: matrix.enabled == true
+        run: |
           mkdir -p release
           zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}
 
