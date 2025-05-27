@@ -8,13 +8,7 @@ on:
 
 env:
   UNITY_VERSION: "6000.0.49.f1"
-  BUILD_WINDOWS: "true"
-  BUILD_MAC: "true"
-  BUILD_ANDROID: "true"
   FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
-  ARCHIVE_NAME_WIN: "UnityBuild_Windows.zip"
-  ARCHIVE_NAME_MAC: "UnityBuild_Mac.zip"
-  ARCHIVE_NAME_ANDROID: "UnityBuild_Android.zip"
   DISCORD_MESSAGE: "Nouveau build Unity publié pour la version ${{ github.ref_name }} !"
   RELEASE_BODY: "Nouveau build Unity pour la version ${{ github.ref_name }}."
   RELEASE_NAME: "Unity Build"
@@ -24,15 +18,21 @@ jobs:
     name: Setup Build Config
     runs-on: ubuntu-latest
     outputs:
-      windows_enabled: ${{ steps.set_outputs.outputs.windows_enabled }}
-      mac_enabled: ${{ steps.set_outputs.outputs.mac_enabled }}
-      android_enabled: ${{ steps.set_outputs.outputs.android_enabled }}
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
     steps:
-      - id: set_outputs
+      - id: set_matrix
         run: |
-          echo "windows_enabled=${{ env.BUILD_WINDOWS }}" >> $GITHUB_OUTPUT
-          echo "mac_enabled=${{ env.BUILD_MAC }}" >> $GITHUB_OUTPUT
-          echo "android_enabled=${{ env.BUILD_ANDROID }}" >> $GITHUB_OUTPUT
+          MATRIX_JSON=$(cat <<EOF
+          {
+            "include": [
+              { "targetPlatform": "StandaloneWindows64", "enabled": true, "archive": "UnityBuild_Windows.zip" },
+              { "targetPlatform": "StandaloneOSX", "enabled": false, "archive": "UnityBuild_Mac.zip" },
+              { "targetPlatform": "Android", "enabled": false, "archive": "UnityBuild_Android.zip" }
+            ]
+          }
+          EOF
+          )
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
   check_conflicts:
     name: Check for Unity file conflicts
@@ -57,18 +57,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - targetPlatform: StandaloneWindows64
-            enabled: ${{ env.BUILD_WINDOWS }}
-            archive: ${{ env.ARCHIVE_NAME_WIN }}
-          - targetPlatform: StandaloneOSX
-            enabled: ${{ env.BUILD_MAC }}
-            archive: ${{ env.ARCHIVE_NAME_MAC }}
-          - targetPlatform: Android
-            enabled: ${{ env.BUILD_ANDROID }}
-            archive: ${{ env.ARCHIVE_NAME_ANDROID }}
-    if: matrix.enabled == 'true'
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    if: matrix.enabled == true
     steps:
       - uses: actions/checkout@v3
       - name: Activate Unity License
@@ -99,9 +89,9 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            release/${{ env.ARCHIVE_NAME_WIN }}
-            release/${{ env.ARCHIVE_NAME_MAC }}
-            release/${{ env.ARCHIVE_NAME_ANDROID }}
+            release/UnityBuild_Windows.zip
+            release/UnityBuild_Mac.zip
+            release/UnityBuild_Android.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
