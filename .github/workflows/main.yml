@@ -1,0 +1,132 @@
+name: Unity CI/CD Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: "6000.0.49f1"  # Version Unity
+
+  # Activation des plateformes
+  BUILD_WINDOWS: "true"
+  BUILD_MAC: "false"
+  BUILD_ANDROID: "false"
+
+  # Config générale
+  FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
+  ARCHIVE_NAME_WIN: "UnityBuild_Windows.zip"
+  ARCHIVE_NAME_MAC: "UnityBuild_Mac.zip"
+  ARCHIVE_NAME_ANDROID: "UnityBuild_Android.zip"
+  DISCORD_MESSAGE: "Nouveau build Unity publié pour la version ${{ github.ref_name }} !"
+  RELEASE_BODY: "Nouveau build Unity pour la version ${{ github.ref_name }}."
+  RELEASE_NAME: "Unity Build"
+
+jobs:
+  check_conflicts:
+    name: Check for Unity file conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Detect merge conflict markers
+        run: |
+          echo "Checking for conflict markers in Unity files..."
+          grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ || true
+          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ | wc -l)
+          echo "Found $CONFLICT_COUNT conflict markers."
+          if [ "$CONFLICT_COUNT" -gt 0 ]; then
+            echo "::error file=CONFLICT,::Conflict markers found in Unity files! Please resolve before merging."
+            exit 1
+          fi
+
+  build_windows:
+    if: env.BUILD_WINDOWS == 'true'
+    name: Build Unity Project for Windows
+    needs: check_conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Unity Project (Windows)
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+      - name: Archive Windows Build
+        run: |
+          mkdir -p release
+          zip -r release/${{ env.ARCHIVE_NAME_WIN }} build/StandaloneWindows64/
+
+  build_mac:
+    if: env.BUILD_MAC == 'true'
+    name: Build Unity Project for Mac
+    needs: check_conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Unity Project (Mac)
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneOSX
+      - name: Archive Mac Build
+        run: |
+          mkdir -p release
+          zip -r release/${{ env.ARCHIVE_NAME_MAC }} build/StandaloneOSX/
+
+  build_android:
+    if: env.BUILD_ANDROID == 'true'
+    name: Build Unity Project for Android
+    needs: check_conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Unity Project (Android)
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+      - name: Archive Android Build
+        run: |
+          mkdir -p release
+          zip -r release/${{ env.ARCHIVE_NAME_ANDROID }} build/Android/
+
+  release_build:
+    name: Create or Update GitHub Release
+    needs: [build_windows, build_mac, build_android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.RELEASE_NAME }} ${{ github.ref_name }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+          files: |
+            release/${{ env.ARCHIVE_NAME_WIN }}
+            release/${{ env.ARCHIVE_NAME_MAC }}
+            release/${{ env.ARCHIVE_NAME_ANDROID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify_team:
+    name: Notify Team
+    needs: release_build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on Discord
+        uses: Ilshidur/action-discord@master
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          message: ${{ env.DISCORD_MESSAGE }}
+      - name: Notify on Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author
+          author_name: GitHub Actions
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
