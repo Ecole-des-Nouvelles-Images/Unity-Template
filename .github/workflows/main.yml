@@ -14,25 +14,21 @@ env:
   RELEASE_NAME: "Unity Build"
 
 jobs:
+
   setup:
-    name: Setup Matrix
+    name: Setup Build Config
     runs-on: ubuntu-latest
     outputs:
-      matrix_json: ${{ steps.set_matrix.outputs.matrix_json }}
+      matrix_json: |
+        {
+          "include": [
+            { "targetPlatform": "StandaloneWindows64", "enabled": true, "archive": "UnityBuild_Windows.zip" },
+            { "targetPlatform": "StandaloneOSX", "enabled": false, "archive": "UnityBuild_Mac.zip" },
+            { "targetPlatform": "Android", "enabled": false, "archive": "UnityBuild_Android.zip" }
+          ]
+        }
     steps:
-      - id: set_matrix
-        run: |
-          echo '${{ toJSON({
-            include: [
-              { targetPlatform: "StandaloneWindows64", enabled: true, archive: "UnityBuild_Windows.zip" },
-              { targetPlatform: "StandaloneOSX", enabled: false, archive: "UnityBuild_Mac.zip" },
-              { targetPlatform: "Android", enabled: false, archive: "UnityBuild_Android.zip" }
-            ]
-          }) }}' > matrix.json
-          MATRIX=$(cat matrix.json)
-          echo "matrix_json<<EOF" >> $GITHUB_OUTPUT
-          echo "$MATRIX" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      - run: echo "Setup complete."
 
   check_conflicts:
     name: Check for Unity file conflicts
@@ -43,8 +39,8 @@ jobs:
       - name: Detect merge conflict markers
         run: |
           echo "Checking for conflict markers in Unity files..."
-          grep -r -E '<<<<<<<|=======|>>>>>>>' --include="${{ env.FILE_PATTERNS }}" ./ || true
-          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include="${{ env.FILE_PATTERNS }}" ./ | wc -l)
+          grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ || true
+          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ | wc -l)
           echo "Found $CONFLICT_COUNT conflict markers."
           if [ "$CONFLICT_COUNT" -gt 0 ]; then
             echo "::error file=CONFLICT,::Conflict markers found in Unity files! Please resolve before merging."
@@ -58,25 +54,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.setup.outputs.matrix_json) }}
+    if: ${{ matrix.enabled == true }}
     steps:
       - uses: actions/checkout@v3
+
+      # Activation de la licence Unity directement dans le build
       - name: Activate Unity License
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      - name: Build
+
+      - name: Cache Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('**/*.cs', '**/*.unity', '**/*.prefab', '**/*.mat', '**/*.asset', '**/*.anim', '**/*.controller') }}
+
+      - name: Build ${{ matrix.targetPlatform }}
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: ${{ matrix.targetPlatform }}
-      - run: |
-          if [ "${{ matrix.enabled }}" = "true" ]; then
-            mkdir -p release
-            zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}/
-          fi
+
+      - name: Archive Build
+        run: |
+          mkdir -p release
+          zip -r release/${{ matrix.archive }} build/${{ matrix.targetPlatform }}/
+
       - uses: actions/upload-artifact@v3
         with:
-          name: Build-${{ matrix.targetPlatform }}
+          name: Build ${{ matrix.targetPlatform }}
           path: release/${{ matrix.archive }}
 
   release_build:
@@ -85,7 +92,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create GitHub Release
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: release
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
@@ -93,8 +105,7 @@ jobs:
           body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
-          files: |
-            release/*.zip
+          files: release/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -108,6 +119,7 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           message: ${{ env.DISCORD_MESSAGE }}
+
       - name: Notify on Slack
         uses: 8398a7/action-slack@v3
         with:
