@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  UNITY_VERSION: "6000.0.49.f1"
+  UNITY_VERSION: "6000.1.0f1"
   FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
   DISCORD_MESSAGE: "Nouveau build Unity publié pour la version ${{ github.ref_name }} !"
   RELEASE_BODY: "Nouveau build Unity pour la version ${{ github.ref_name }}."
@@ -44,12 +44,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Activate Unity License
-        uses: game-ci/unity-activate@v2
+      - name: Build Windows
+        uses: game-ci/unity-builder@v4.3.0
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      - name: Build Windows
-        uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
@@ -67,12 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Activate Unity License
-        uses: game-ci/unity-activate@v2
+      - name: Build Mac
+        uses: game-ci/unity-builder@v4.3.0
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      - name: Build Mac
-        uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: StandaloneOSX
@@ -90,12 +86,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Activate Unity License
-        uses: game-ci/unity-activate@v2
+      - name: Build Android
+        uses: game-ci/unity-builder@v4.3.0
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      - name: Build Android
-        uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
@@ -137,7 +131,6 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           message: ${{ env.DISCORD_MESSAGE }}
-
       - name: Notify on Slack
         uses: 8398a7/action-slack@v3
         with:
