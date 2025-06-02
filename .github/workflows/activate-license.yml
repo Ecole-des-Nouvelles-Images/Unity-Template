@@ -1,9 +1,9 @@
-name: License
+name: License Activation
 
 on:
   schedule:
-  - cron: "0 0 * * 1"
-  workflow_dispatch:
+    - cron: "0 0 * * 1" # Exécution chaque semaine
+  workflow_dispatch: # Déclenchement manuel
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,7 +11,6 @@ concurrency:
 
 env:
   UNITY_VERSION: 6000.0.11f1
-  ULF_FILE: Unity_v6000.x.ulf
 
 jobs:
   request_alf:
@@ -20,23 +19,26 @@ jobs:
     outputs:
       alf: ${{ steps.output.outputs.alf }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Request manual activation file
         id: alfFile
-        uses: game-ci/unity-request-activation-file@main
+        uses: game-ci/unity-activate@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
+          activationMode: manual
+          personalLicense: true # True pour licence personnelle, à ajuster pour Pro ou Plus
 
-      # Upload artifact (Unity_v20XX.X.XXXX.alf)
-      - name: Expose as artifact
+      - name: Upload .alf as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.alfFile.outputs.filePath }}
-          path: ${{ steps.alfFile.outputs.filePath }}
+          name: unity-alf
+          path: unity.alf
 
-      - name: Output
+      - name: Output alf path
         id: output
-        run: |
-          echo "::set-output name=alf::${{ steps.alfFile.outputs.filePath }}"
+        run: echo "::set-output name=alf::unity.alf"
 
   acquire_ulf:
     needs: [request_alf]
@@ -46,32 +48,8 @@ jobs:
       - name: Download .alf artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.request_alf.outputs.alf }}
+          name: unity-alf
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
-      - name: Install node package, `unity-license-activate`
-        run: npm install --global unity-license-activate
-
-      - name: Install node package, `unity-verify-code`
-        run: npm install --global unity-verify-code
-
-      - name: Activate the license
-        continue-on-error: true
-        run: unity-license-activate "${{ secrets.UNITY_EMAIL }}" "${{ secrets.UNITY_PASSWORD }}" "${{ needs.request_alf.outputs.alf }}"
-
-      - name: Read ulf
-        id: ulfRead
-        uses: juliangruber/read-file-action@v1.1.4
-        with:
-          path: ${{ env.ULF_FILE }}
-
-      - name: Update secret UNITY_LICENSE
-        uses: hmanzur/actions-set-secret@v2.0.0
-        with:
-          name: 'UNITY_LICENSE'
-          value: '${{ steps.ulfRead.outputs.content }}'
-          token: ${{ secrets.PAT }}
+      - name: Mettre à jour le secret UNITY_LICENSE (optionnel)
+        id: update_secret
+        run: echo "Téléchargez le .ulf généré et stockez son contenu dans le secret UNITY_LICENSE pour automatiser l'activation."
