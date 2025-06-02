@@ -56,7 +56,7 @@ jobs:
       - run: |
           mkdir -p release
           zip -r release/UnityBuild_Windows.zip build/StandaloneWindows64/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: WindowsBuild
           path: release/UnityBuild_Windows.zip
@@ -79,7 +79,7 @@ jobs:
       - run: |
           mkdir -p release
           zip -r release/UnityBuild_Mac.zip build/StandaloneOSX/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: MacBuild
           path: release/UnityBuild_Mac.zip
@@ -102,7 +102,7 @@ jobs:
       - run: |
           mkdir -p release
           zip -r release/UnityBuild_Android.zip build/Android/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: AndroidBuild
           path: release/UnityBuild_Android.zip
@@ -112,7 +112,7 @@ jobs:
     needs: [build_windows, build_mac, build_android]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: release
       - name: Create or Update GitHub Release
