@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  UNITY_VERSION: 6000.0.11f1
+  UNITY_VERSION: 6.0.11f1
 
 jobs:
   request_alf:
@@ -27,8 +27,6 @@ jobs:
         uses: game-ci/unity-activate@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
-          activationMode: manual
-          personalLicense: true # True pour licence personnelle, à ajuster pour Pro ou Plus
 
       - name: Upload .alf as artifact
         uses: actions/upload-artifact@v4
