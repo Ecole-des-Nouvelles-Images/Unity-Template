@@ -28,7 +28,7 @@ jobs:
 
       # Upload artifact (Unity_v20XX.X.XXXX.alf)
       - name: Expose as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.alfFile.outputs.filePath }}
           path: ${{ steps.alfFile.outputs.filePath }}
@@ -40,11 +40,11 @@ jobs:
 
   acquire_ulf:
     needs: [request_alf]
-    name: Acquire .ulf file 🔑
+    name: Acquire .ulf file
     runs-on: ubuntu-latest
     steps:
       - name: Download .alf artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ needs.request_alf.outputs.alf }}
 
