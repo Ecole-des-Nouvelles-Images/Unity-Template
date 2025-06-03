@@ -3,11 +3,7 @@ name: License Activation
 on:
   schedule:
     - cron: "0 0 * * 1" # Exécution chaque semaine
-  workflow_dispatch: # Déclenchement manuel
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 env:
   UNITY_VERSION: 2023.2.20f1
