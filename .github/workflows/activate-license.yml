@@ -1,48 +1,53 @@
-name: Unity Activation
+name: License Activation
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1" # Exécution chaque semaine
+  workflow_dispatch: # Déclenchement manuel
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  UNITY_VERSION: "6000.1.0f1"
+  UNITY_VERSION: 2023.2.20f1
 
 jobs:
-
-  checklicense:
-    name: Check for UNITY_LICENSE in GitHub Secrets
+  request_alf:
+    name: Request .alf file
     runs-on: ubuntu-latest
     outputs:
-      is_unity_license_set: ${{ steps.checklicense_job.outputs.is_unity_license_set }}
-    steps:
-      - name: Check whether unity activation requests should be done
-        id: checklicense_job
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        run: |
-          echo "Skip activation job: ${{ env.UNITY_LICENSE != '' }}"
-          if [ -n "${{ env.UNITY_LICENSE }}" ]; then
-            echo "is_unity_license_set=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_unity_license_set=false" >> $GITHUB_OUTPUT
-          fi
-
-  activation:
-    needs: checklicense
-    if: needs.checklicense.outputs.is_unity_license_set == 'false'
-    name: Request manual activation file :key:
-    runs-on: ubuntu-latest
+      alf: ${{ steps.output.outputs.alf }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Request manual activation file
-        id: getManualLicenseFile
-        uses: game-ci/unity-request-activation-file@v4.3.0
+        id: alfFile
+        uses: game-ci/unity-activate@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
 
-      - name: Upload .alf artifact
+      - name: Upload .alf as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: UnityActivationFile
-          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          name: unity-alf
+          path: unity.alf
+
+      - name: Output alf path
+        id: output
+        run: echo "::set-output name=alf::unity.alf"
+
+  acquire_ulf:
+    needs: [request_alf]
+    name: Acquire .ulf file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download .alf artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: unity-alf
+
+      - name: Mettre à jour le secret UNITY_LICENSE (optionnel)
+        id: update_secret
+        run: echo "Téléchargez le .ulf généré et stockez son contenu dans le secret UNITY_LICENSE pour automatiser l'activation."
